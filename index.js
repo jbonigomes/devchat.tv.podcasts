@@ -1,10 +1,10 @@
 const fs = require('fs');
 const kue = require('kue');
 const jobs = kue.createQueue();
+const colours = require('colors');
 const Promise = require('promise');
 const download = require('download-file');
 const feedparser = require('feedparser-promised');
-
 
 const config = require('./config');
 
@@ -50,3 +50,5 @@ Promise.all(promises).then((data) => {
 
 
 kue.app.listen(3000);
+
+console.log('App available at:', colours.blue('http://localhost:3000'));
