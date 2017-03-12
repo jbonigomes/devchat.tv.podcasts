@@ -1,68 +1,44 @@
-// Dependencies
 const fs = require('fs');
 const kue = require('kue');
 const jobs = kue.createQueue();
 const Promise = require('promise');
-const express = require('express');
 const download = require('download-file');
 const feedparser = require('feedparser-promised');
 
 
-// MAKE SURE THE FOLDERS YOU'LL 'SAVE TO' EXIST AND ARE CHMOD 777
-// WE ALSO ASSUME THAT WHATCHED FILES GO INTO A SUBFOLDER NAMED 'archive'
-// VIEW README FOR THE COMPLETE WORKFLOW
-// Due to inconsistency with their urls, the app only caters for jabber and
-// angular podcasts, fell free to open a PR that adds more podcasts from
-// Devchat.TV and/or any other feeds
-const urls = [{
-  type: 'jabber',
-  path: 'episodes/jabber',
-  url: 'https://feeds.feedwrench.com/JavaScriptJabber.rss',
-}, {
-  type: 'angular',
-  path: 'episodes/angular',
-  url: 'https://feeds.feedwrench.com/AdventuresInAngular.rss',
-}];
+const config = require('./config');
 
 
-const fix = (name) => {
-  if (name === 'JSJ250_InfoSec_for_Web_Developers_with_Kim_Carter.mp3') {
-    return 'JSJ251_InfoSec_for_Web_Developers_with_Kim_Carter.mp3';
-  }
-
-  return name;
-};
-
-
-const promises = urls.map((config) => feedparser.parse(config.url));
-const getType = (type) => type === 'jabber' ? 'javascriptjabber' : 'angular';
-const getURL = (nm, tp) => `https://devchat.cachefly.net/${getType(tp)}/${nm}`;
-const getEpisodeName = (url) => fix(url.split('/').pop().replace('?rss=true', ''));
+const feedsURL = 'https://feeds.feedwrench.com/';
+const filesURL = 'https://devchat.cachefly.net/';
 
 
 const fileExist = (name) => {
-  return urls.some((obj) => {
-    const exist = fs.existsSync(`${obj.path}/${name}`);
-    const isArchived = fs.existsSync(`${obj.path}/archive/${name}`);
+  const exists = fs.existsSync;
+  const isArchived = exists(`./archive/${name}`);
+  const isDownload = urls.some((obj) => exists(`episodes/${obj.type}/${name}`));
 
-    return exist || isArchived;
-  });
+  return isArchived || isDownload;
 };
 
 
-Promise.all(promises).then((feeds) => {
-  feeds.forEach((feed, i) => {
-    feed.forEach((xml) => {
-      const name = getEpisodeName(xml.enclosures[0].url);
+const urls = config.filter((obj) => obj.active);
+const promises = urls.map((obj) => feedparser.parse(`${feedsURL}${obj.rss}`));
+
+
+Promise.all(promises).then((data) => {
+  data.forEach((xml, i) => {
+    xml.forEach((item) => {
+      const name = item.enclosures[0].url.split('/').pop().replace('?rss=true', '');
 
       if (!fileExist(name)) {
-        const config = {
+        const jobConfig = {
           filename: name,
-          directory: urls[i].path,
-          url: getURL(name, urls[i].type),
+          directory: `./episodes/${urls[i].type}`,
+          url: `${filesURL}${urls[i].type}/${name}`,
         };
 
-        jobs.create('convert mp3', config).removeOnComplete(true).save();
+        jobs.create('convert mp3', jobConfig).removeOnComplete(true).save();
       }
     });
   });
@@ -74,9 +50,3 @@ Promise.all(promises).then((feeds) => {
 
 
 kue.app.listen(3000);
-
-
-// UNCOMMENT TO USE THIS SAMPLE OF QUEUE MANAGEMENT
-// jobs.failed((err, ids) => {
-//   ids.forEach(kue.Job.remove);
-// });

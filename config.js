@@ -1,0 +1,33 @@
+module.exports = [{
+  active: true,
+  type: 'javascriptjabber',
+  rss: 'JavaScriptJabber.rss',
+}, {
+  active: true,
+  type: 'angular',
+  rss: 'AdventuresInAngular.rss',
+}, {
+  active: false,
+  type: 'iphreaks',
+  rss: 'iPhreaks.rss',
+}, {
+  active: false,
+  type: 'freelancers',
+  rss: 'TheFreelancersShow.rss',
+}, {
+  active: false,
+  type: 'rubyrogues',
+  rss: 'RubyRogues.rss',
+}, {
+  active: false,
+  type: 'remoteconfs',
+  rss: 'remoteconfs-audio.rss',
+}, {
+  active: false,
+  type: 'reactnativeradio',
+  rss: 'react-native-radio.rss',
+}, {
+  active: false,
+  type: 'websecwarriors',
+  rss: 'websecwarriors.rss',
+}];
